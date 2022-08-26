@@ -1,0 +1,350 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Tangible Grid</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/style.e308ff8e.css" rel="stylesheet">
+<script src="/style.e308ff8e.js"></script></head>
+
+<body>
+  <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" target="_blank" href="https://www.tangiblewaves.com/"><img id="header-img" class="d-inline my-2 my-lg-0" src="/tw-logo-small-invert_1.1fc583ef.png"></a>
+    <span class="navbar-brand">Æ Modular Grid</span>
+
+    <div id="navbarsExampleDefault">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a class="nav-link" target="_blank" href="http://forum.aemodular.com/">Forum</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" target="_blank" href="http://wiki.aemodular.com/">Wiki</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <main role="main" class="container-fluid">
+    <div class="card" id="rack-card">
+      <div class="card-header">
+        <h5>
+          <span data-bind="text:currentRack().Name"></span>
+          <div class="rack-buttons">
+            <button class="btn btn-secondary border" data-toggle="modal" data-target="#editRackModal">Edit</button>
+            <!-- ko ifnot: UseCopyPaste -->
+            <button class="btn btn-secondary border" data-bind="click: SaveRack">Save</button>
+            <button class="btn btn-secondary border" onclick="$('#loadrack').trigger('click'); return false;">Load rack</button>
+            <input id="loadrack" type="file" class="d-none" data-bind="event: { change: function() { LoadRack($element.files[0]) } } ">
+            <!-- /ko -->
+            <!-- ko if: UseCopyPaste -->
+            <button class="btn btn-secondary border" data-bind="click: DisplayCopyPaste" data-toggle="modal" data-target="#CopyPasteRackModal">Save/Load rack</button>
+            <!-- /ko -->
+            <div class="btn-group">
+              <button class="btn btn-secondary dropdown-toggle border" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Load preset system</button>
+              <div class="dropdown-menu">
+                <button class="dropdown-item" data-bind="click: function(){LoadPreset('starterRack2v2');}">Starter Rack 2</button>
+                <button class="dropdown-item" data-bind="click: function(){LoadPreset('starterRack1v2');}">Starter Rack 1</button>
+              </div>
+            </div>
+            <div class="form-check form-check-inline ml-5 form-control-sm">
+              <input type="checkbox" class="form-check-input" id="chk-show-disc" data-bind="checked: UseCopyPaste">
+              <label class="form-check-label" for="chk-show-disc">
+                Copy/Paste Save/Load <span class="badge badge-pill badge-dark" data-toggle="tooltip" data-placement="top" title="Check this if you have trouble saving/loading your rack as a file. Enabled by default on iOS.">?</span>
+              </label>
+            </div>
+          </div>
+        </h5>
+      </div>
+
+      <div class="card-body">
+        Cases : <select id="cases" data-bind="options: cases, optionsText: 'Name', value: selectedCase"></select>
+        <button data-bind="click: AddCaseToRack">Add</button>
+
+        <div id="cases-container" data-bind="with: currentRack">
+          <!-- ko foreach: Cases -->
+          <div class="case-container">
+            <div class="actions">
+              <button data-bind="click: $parent.MoveCaseUp" title="Move case up">&uarr;</button>
+              <button data-bind="click: $parent.MoveCaseDown" title="Move case down">&darr;</button>
+              <br>
+              <button data-bind="click: $parent.DeleteCase" title="Delete case">&times;</button>
+              <br>
+              <select class="case-material-select" data-bind="options: $root.caseMaterials, optionsText: 'Name', optionsValue: 'Class', value: Material"></select>
+            </div>
+            <div class="case" data-bind="class: Material, foreach: Content">
+              <ul class="case-row" data-bind="foreach: Modules">
+                <li class="module-container" data-bind="attr:{colspan: Units}, class: 'unit' + Units">
+                  <div class="module" data-bind="css:{'dragging': IsDragging, 'dragover': IsDraggedOver}, attr:{'title': Name}">
+                    <!-- ko ifnot: IsBlank -->
+                    <div class="bright-module-overlay"></div>
+
+                    <!-- ko if: IsDIY -->
+                    <div class="diy-module-overlay"></div>
+                    <span class="diy-module-text" data-bind="text: Name, css:{'diy-text-rotate': DiyTextRotate}"></span>
+                    <!-- /ko -->
+
+                    <div class="module-actions">
+                      <span class="module-name" data-bind="text: Name"></span>
+                      <ul class="info-list">
+                        <!-- ko if: Manufacturer -->
+                        <li data-bind="text: 'By ' + Manufacturer"></li>
+                        <!-- /ko -->
+
+                        <!-- ko ifnot: Discontinued || IsDIY -->
+                        <li title="Price" data-bind="text: Price + '€'"></li>
+                        <!-- /ko -->
+
+                        <!-- ko if: Discontinued -->
+                        <li title="This module is discontinued">Discontinued</li>
+                        <!-- /ko -->
+
+                        <!-- ko if: IsDIY -->
+                        <li title="This is a DIY module">DIY</li>
+                        <!-- /ko -->
+                      </ul>
+                      <button type="button" class="remove-module btn btn-light btn-sm mb-1 border" data-bind="click: $parent.ReplaceModuleWithBlanks" title="Delete module">Delete</button>
+                      <button type="button" class="move-module-to-reserve btn btn-light btn-sm mb-1 border" data-bind="click: function(module, event){$root.MoveModuleToReserve(module, event, $parent, $index);}" title="Move module to reserve">To Reserve</button>
+                      <!-- ko if: WikiLink -->
+                      <a class="wiki-link btn btn-light btn-sm mb-1 border" href="#" role="button" target="_blank" data-bind="attr:{href:WikiLink}" title="See on the wiki">Wiki</a>
+                      <!-- /ko -->
+                      <!-- ko if: ShopLink -->
+                      <a class="shop-link btn btn-light btn-sm mb-1 border" href="#" role="button" target="_blank" data-bind="attr:{href:ShopLink}" title="See on the shop">Shop</a>
+                      <!-- /ko -->
+                    </div>
+                    <!-- /ko -->
+
+                    <img data-bind="attr:{src:Image, alt: Name, draggable: Draggable + ''}, 
+                      event:{
+                        dragstart: function(module, event){$root.ModuleDragStart(module, event); DragStart(module, event, 'rack', $parent, $index); return true;}, 
+                        dragend: function(targetModule, event){$root.ModuleDragEnd(targetModule, event, $parent, $index); DragEnd(targetModule, event, $parent, $index);}, 
+                        dragenter: function(targetModule, event){$root.ModuleDragEnter(targetModule, event, $parent, $index); DragEnter(targetModule, event, $parent, $index);}, 
+                        dragleave: DragLeave,
+                        drop: function(targetModule, event){$root.DropModuleInRack(targetModule, event, $parent, $index);}, 
+                        dragover: DragOver
+                        }">
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <!-- /ko -->
+          <div class="rack-info">
+            Estimated price &asymp; <span data-bind="text: TotalPrice"></span>€ without tax.
+            <div class="alert alert-warning" role="alert" data-bind="visible: PriceHasErrors">
+              Warning : Your rack contains modules discontinued or without price. They are not counted in the total.
+            </div>
+          </div>
+          <div class="rack-info">
+            Total power capacity: <span data-bind="text: TotalPowerCapacity"></span>mA<br>
+            Total power consumption : <span data-bind="text: TotalPowerConsumption"></span>mA (not included DIY modules)
+            <div class="alert alert-warning" role="alert" data-bind="visible: PowerHasErrors">
+              Warning : Your rack contains modules with unknown power consumption. They are not counted in the total.
+            </div>
+            <div class="alert alert-danger" role="alert" data-bind="visible: PowerCapacityExceeded">
+              You have exceeded the power capacity of your rack. You need another power module.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header">
+        <h5>Module finder</h5>
+      </div>
+
+      <div class="card-body">
+        Category :
+        <select id="module-category" data-bind="value:ModuleFinderFilter">
+            <option value="NEW">Newest modules</option>
+            <option value="ALL">All modules</option>
+            <option disabled="disabled">----</option>
+            <option value="SOUND">Sound generation</option>
+            <option value="FILTER">Filter</option>
+            <option value="EFFECT">Effect</option>
+            <option value="CV">CV generation/manipulation</option>
+            <option value="TRIGGER">Trigger generation/manipulation</option>
+            <option value="IO">Interface</option>
+            <option value="UTILITY">Utility</option>
+        </select>
+
+        <div class="form-check form-check-inline ml-3">
+          <input type="checkbox" class="form-check-input" id="chk-show-disc" data-bind="checked: showDiscontinued">
+          <label class="form-check-label" for="chk-show-disc">Show discontinued modules</label>
+        </div>
+
+        <div id="module-finder-results" data-bind="foreach:FilteredModules">
+          <div class="module" data-bind="class: 'unit' + Units, css:{'discontinued':Discontinued}, attr:{'title': Name}">
+            <div class="discontinued-overlay"></div>
+            <div class="bright-module-overlay"></div>
+            <div class="module-actions">
+              <span class="module-name" data-bind="text:Name"></span>
+              <ul class="info-list">
+                <!-- ko if: Manufacturer -->
+                <li data-bind="text: 'By ' + Manufacturer"></li>
+                <!-- /ko -->
+
+                <!-- ko ifnot: Discontinued -->
+                <li title="Price" data-bind="text: Price + '€'">Discontinued</li>
+                <!-- /ko -->
+
+                <!-- ko if: Discontinued -->
+                <li title="This module is discontinued">Discontinued</li>
+                <!-- /ko -->
+              </ul>
+              <button type="button" class="remove-module btn btn-light btn-sm mb-1 border" data-bind="click: $parent.AddModuleToReserve" title="Add module to reserve">To Reserve</button>
+              <!-- ko if: WikiLink -->
+              <a class="wiki-link btn btn-light btn-sm mb-1 border" href="#" role="button" target="_blank" data-bind="attr:{href:WikiLink}" title="See on the wiki">Wiki</a>
+              <!-- /ko -->
+              <!-- ko if: ShopLink -->
+              <a class="shop-link btn btn-light btn-sm mb-1 border" href="#" role="button" target="_blank" data-bind="attr:{href:ShopLink}" title="See on the shop">Shop</a>
+              <!-- /ko -->
+            </div>
+            <img data-bind="attr:{src:Image, alt: Name},
+                            event:{
+                              dragstart: function(module, event){$root.ModuleDragStart(module, event); DragStart(module, event, 'finder'); return true;}, 
+                              dragend: function(targetModule, event){$root.ModuleDragEnd(targetModule, event, $parent, $index); DragEnd(targetModule, event, $parent, $index);}}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header">
+        <h5>
+          Module reserve
+          <a class="btn expand" data-toggle="collapse" href="#reserve-wrapper" aria-expanded="false" title="Open module reserve">
+            <div class="expand-caret">&#x25B8;</div>
+          </a>
+        </h5>
+      </div>
+
+      <div class="card-body collapse" id="reserve-wrapper">
+        Add modules to your reserve, then drag-and-drop them into your rack
+
+        <!-- ko with: currentRack().ModuleReserve -->
+        <div id="module-reserve" class="rounded-sm bg-light" data-bind="foreach: Modules, 
+                        event:{dragover: DragOver, dragenter: DragEnter, dragleave: DragLeave, drop: $root.DropModuleInReserve}, 
+                        css:{'dragover': IsDraggedOver, 'border': !IsDraggedOver()}">
+          <div class="reserve-module-container">
+            <div class="module" data-bind="class: 'unit' + Units, css:{'dragging': IsDragging}, attr:{'title': Name}">
+              <!-- ko if: IsDIY -->
+              <div class="diy-module-overlay"></div>
+              <span class="diy-module-text" data-bind="text: Name, css:{'diy-text-rotate': DiyTextRotate}"></span>
+              <!-- /ko -->
+              <div class="module-actions">
+                <span class="module-name" data-bind="text:Name"></span>
+                <ul class="info-list">
+                  <!-- ko if: Manufacturer -->
+                  <li data-bind="text: 'By ' + Manufacturer"></li>
+                  <!-- /ko -->
+
+                  <!-- ko ifnot: Discontinued || IsDIY -->
+                  <li title="Price" data-bind="text: Price + '€'"></li>
+                  <!-- /ko -->
+
+                  <!-- ko if: Discontinued -->
+                  <li title="This module is discontinued">Discontinued</li>
+                  <!-- /ko -->
+
+                  <!-- ko if: IsDIY -->
+                  <li title="This is a DIY module">DIY</li>
+                  <!-- /ko -->
+                </ul>
+                <button type="button" class="remove-module btn btn-light btn-sm mb-1 border" data-bind="click: $parent.DeleteModule" title="Delete module">Delete</button>
+                <!-- ko if: WikiLink -->
+                <a class="wiki-link btn btn-light btn-sm mb-1 border" href="#" role="button" target="_blank" data-bind="attr:{href:WikiLink}" title="See on the wiki">Wiki</a>
+                <!-- /ko -->
+                <!-- ko if: ShopLink -->
+                <a class="shop-link btn btn-light btn-sm mb-1 border" href="#" role="button" target="_blank" data-bind="attr:{href:ShopLink}" title="See on the shop">Shop</a>
+                <!-- /ko -->
+              </div>
+              <img data-bind="attr:{src:Image, alt: Name, draggable: Draggable}, 
+                                event:{
+                                  dragstart: function(module, event){$root.ModuleDragStart(module, event); DragStart(module, event, 'reserve'); return true;}, 
+                                  dragend: function(targetModule, event){$root.ModuleDragEnd(targetModule, event, $parent, $index); DragEnd(targetModule, event, $parent, $index);}}">
+            </div>
+          </div>
+        </div>
+        <!-- /ko -->
+      </div>
+    </div>
+
+    <div class="card mt-3 mb-3">
+      <div class="card-header">
+        <h5>DIY
+          <a class="btn expand" data-toggle="collapse" href="#diy-wrapper" aria-expanded="false" title="Open DIY">
+            <div class="expand-caret">&#x25B8;</div>
+          </a>
+        </h5>
+      </div>
+
+      <div class="card-body collapse" id="diy-wrapper">
+        <h5 class="card-title">Add DIY Module</h5>
+        Units:
+        <select id="diy-units" data-bind="value: diyModuleUnits">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+        Text: <input id="diy-text" type="text" maxlength="25" placeholder="My DIY module" data-bind="textInput: diyModuleText">
+        <button data-bind="click: AddDIYModuleToReserve">Add</button>
+      </div>
+    </div>
+
+    
+
+  </main>
+
+  <div class="modal fade" id="editRackModal" tabindex="-1" role="dialog" aria-labelledby="editRackModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editRackModalLabel">Edit rack</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="rackNameInput">Rack name</label>
+            <input type="text" class="form-control" id="rackNameInput" data-bind="textInput: currentRack().Name">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="CopyPasteRackModal" tabindex="-1" role="dialog" aria-labelledby="CopyPasteRackModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="CopyPasteRackModalLabel">Save/load rack</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="copyPasteTextArea">Your rack's contents</label>
+            <textarea class="form-control form-control-sm" id="copyPasteTextArea" rows="3" data-bind="textInput: SaveLoadText"></textarea>
+          </div>
+          <button class="btn btn-secondary border" data-bind="click: CopyRackToClipBoard">Copy to clipboard</button>
+          <button class="btn btn-secondary border" data-bind="click: LoadRackFromText">Load rack</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+  <script src="/jquery.dnd_page_scroll.cdc9b37f.js"></script>
+  <script src="/DragDropTouch.36793db2.js"></script>
+
+  <script src="/app.cb581e13.js"></script>
+
+</body>
+
+</html>
